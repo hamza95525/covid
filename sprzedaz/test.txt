@@ -1,0 +1,9 @@
+fifos/myFifo1
+fifos/myFifo2
+fifos/myFifo3
+fifos/myFifo4
+fifos/myFifo5
+fifos/myFifo6
+fifos/myFifo7
+fifos/myFifo8
+fifos/myFifo9

@@ -1,0 +1,27 @@
+fifos/myFifo4 times: 26
+Read from fifo: size->12	28320	36	1
+Read from fifo: size->12	28320	36	1
+Read from fifo: size->12	28320	36	2
+Read from fifo: size->12	28320	36	3
+Read from fifo: size->12	28320	36	4
+Read from fifo: size->12	28320	36	5
+Read from fifo: size->12	28320	36	6
+Read from fifo: size->12	28320	36	7
+Read from fifo: size->12	28320	36	8
+Read from fifo: size->12	28320	36	9
+Read from fifo: size->12	28320	36	10
+Read from fifo: size->12	28320	36	11
+Read from fifo: size->12	28320	36	12
+Read from fifo: size->12	28320	36	13
+Read from fifo: size->12	28320	36	14
+Read from fifo: size->12	28320	36	15
+Read from fifo: size->12	28320	36	16
+Read from fifo: size->12	28320	36	17
+Read from fifo: size->12	28320	36	18
+Read from fifo: size->12	28320	36	19
+Read from fifo: size->12	28320	36	20
+Read from fifo: size->12	28320	36	21
+Read from fifo: size->12	28320	36	22
+Read from fifo: size->12	28320	36	23
+Read from fifo: size->12	28320	36	24
+Read from fifo: size->12	28320	36	25
