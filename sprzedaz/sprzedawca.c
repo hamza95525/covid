@@ -11,12 +11,17 @@
 int checkPath(char *pathToFile);
 int countFifos(char **allFiles, int numberOfLines);
 int *openFifos(int numberOfFifos, char **fifos);
+int isDone(char **fifos, int n);
 int oplacone(int fifoFd);
+char *customSprintf(long i, char b[]);
 static void rtsig_handler(int sig, siginfo_t *si, void *ucontext);
 static void usrsig_handler();
 void selectFifos(char **fifos, char **allFiles, int numberOfLines);
+void customSleep(int nanoSecs);
 void printHelp();
+void printRaport();
 
+int id = 10;
 int iloscWydanych = 0;
 
 struct towar
@@ -30,11 +35,10 @@ struct status
 {
     int fd;
     int status;
+    int id;
 };
 
-struct status *czyPisanoDoTegoFd;
 struct status *wyslane;
-int *doTychPisalem;
 
 int main(int argc, char* argv[])
 {
@@ -90,8 +94,6 @@ int main(int argc, char* argv[])
 
     struct status zapisane;
     memset(&zapisane, 0, sizeof(zapisane));
-    struct status czyPisano;
-    memset(&czyPisano, 0, sizeof(czyPisano));
 
     struct sigaction rtsa;
     sigemptyset(&rtsa.sa_mask);
@@ -101,21 +103,20 @@ int main(int argc, char* argv[])
 
     struct sigaction usrsa;
     memset(&usrsa, '\0', sizeof(usrsa));
-    usrsa.sa_sigaction = &usrsig_handler;
+    usrsa.sa_sigaction = usrsig_handler;
     usrsa.sa_flags = 0;
     sigaction(SIGUSR1, &usrsa, NULL);
     
     int stat = 0;
-    int x = 0;
     while(1)
     {
         int nIt = 0;
-        int nSize = 0;
+        int nSize = 1;
         int numBytes = 0;
         int los = 0;
         int n = countFifos(allFiles, numberOfLines);
         char *fifos[n];
-        int *fifoFds;
+        int *fifoFds = (int*)malloc(1*sizeof(int));
         selectFifos(fifos, allFiles, numberOfLines);
 
         for(int i = 0; i<n; i++)
@@ -128,8 +129,8 @@ int main(int argc, char* argv[])
                 los = ((rand()%2) == 1) ? 1 : 0;
                 if(los == 1)
                 {
-                    printf("LOS: %d\n", los);
                     unlink(fifos[i]);
+                    fifos[i] = NULL;
                 }
             }
             else if(tempFd > 0)
@@ -141,51 +142,46 @@ int main(int argc, char* argv[])
             }  
         }
 
-        for(int i = 0; i<nSize; i++)
+        for(int i = 0; i<nSize-1; i++)
         {
             numBytes = 0;
-            if( stat == 0 || oplacone(fifoFds[i]) == 1 )
+            
+            if( stat == 0 || oplacone(fifoFds[i]) )
             {
                 numBytes = write(fifoFds[i], &paczka, sizeof(paczka));
             }
-            czyPisano.fd = fifoFds[i];
-            czyPisano.status = 1;
-            czyPisanoDoTegoFd = (struct status*)realloc(czyPisanoDoTegoFd, (i+1)*sizeof(*czyPisanoDoTegoFd));
 
             if(numBytes == sizeof(paczka))
             {
-                if( oplacone(fifoFds[i]) == 1 )
-                    printf("zaplacono\n");
-                
-                doTychPisalem = (int*)realloc(doTychPisalem, (i+1)*sizeof(int));
-                doTychPisalem[i] = fifoFds[i];
                 zapisane.fd = fifoFds[i];
                 zapisane.status = 0;
+                zapisane.id += 10;
                 wyslane = (struct status*)realloc(wyslane, (iloscWydanych+1)*sizeof(*wyslane));
                 wyslane[iloscWydanych] = zapisane;
-                printf("id: %d, fd: %d, status: %d\n", iloscWydanych, wyslane[iloscWydanych].fd, wyslane[iloscWydanych].status);
 
                 iloscWydanych++;
                 paczka.idTowaru = iloscWydanych;
                 close(fifoFds[i]);
+                customSleep(4);
             }
         }
-        x++;
-        if( 3 == x)
-            stat = 1;
+        stat = 1;
+        if(isDone(fifos, n))
+        {
+            kill(getpid(), SIGUSR1);
+        }
     }
+
     close(fd);
     return 0;
 }
 
 void rtsig_handler(int sig, siginfo_t *si, void *ucontext)
 {
-   // printf("Otrzymano zaplate za towar: %d\n", si->si_value.sival_int);
     for(int i = 0; i<iloscWydanych; i++)
     {
         if(si->si_value.sival_int == i)
         {
-           // printf("i: %d\n", wyslane[i].fd);
             wyslane[i].status = 1;
         }
     }
@@ -193,7 +189,9 @@ void rtsig_handler(int sig, siginfo_t *si, void *ucontext)
 
 void usrsig_handler()
 {
-    printf("Przechwycono SIGUSR1!\n");
+    //write(1, "FLAGA", 5);
+    printRaport();
+    exit(EXIT_SUCCESS);
 }
 
 int checkPath(char *pathToFile)
@@ -250,9 +248,84 @@ int oplacone(int fifoFd)
     return 0;
 }
 
+int isDone(char **fifos, int n)
+{
+    for(int i = 0; i<n; i++)
+    {
+        if(fifos[i] != NULL)
+        {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+void customSleep(int nanoSecs)
+{
+    struct timespec tm;
+    tm.tv_sec = 0;
+    tm.tv_nsec = (nanoSecs * 100000000);
+    nanosleep(&tm, NULL);
+}
+
+char *customSprintf(long i, char b[])
+{
+    char const digit[] = "0123456789";
+    char* p = b;
+
+    if(i<0)
+    {
+        *p++ = '-';
+        i *= -1;
+    }
+    long shifter = i;
+
+    do
+    {
+        ++p;
+        shifter = shifter/10;
+    }while(shifter);
+    
+    *p = '\0';
+    do
+    {
+        *--p = digit[i%10];
+        i = i/10;
+    }while(i);
+    
+    return b;
+}
+
 void printHelp()
 {
     printf("Przyklady uzycia:\n");
     printf("\t ./<sprzedawca> -s <zaplata[34-64]> <plik_konfiguracyjny>\n");
     printf("\t ./<sprzedawca> <plik_konfiguracyjny> -s <zaplata[34-64]>\n");
 }
+
+void printRaport()
+{
+    write(1, "RAPORT DZIAŁANIA\n", sizeof("RAPORT DZIAŁANIA\n"));
+    write(1, "Sprzedano towarow: ", sizeof("Sprzedano towarow: ")/sizeof(char));
+    char iloscChar[4];
+    customSprintf(iloscWydanych, iloscChar);
+    write(1, iloscChar, sizeof(iloscChar)/sizeof(char));
+    write(1, "\n", sizeof("\n"));
+    write(1, "LISTA SPRZEDANYCH\n", sizeof("LISTA SPRZEDANYCH\n"));
+
+    for(int i = 0; i<iloscWydanych; i++)
+    {
+        char tempFd[4];
+        customSprintf(wyslane[i].fd, tempFd);
+        write(1, "ID TOWARU: ", sizeof("ID TOWARU: "));
+        write(1, tempFd, sizeof(tempFd));
+        write(1, "\t", sizeof("\t"));
+        write(1, "STATUS: ", sizeof("STATUS: "));
+        if(wyslane[i].status == 1)
+            write(1, "OPLACONY\n", sizeof("OPLACONY\n"));
+        else
+            write(1, "NIEOPLACONY\n", sizeof("NIEOPLACONY\n"));
+    }
+}
+

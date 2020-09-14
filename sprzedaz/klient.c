@@ -118,7 +118,7 @@ void openOrCreatePipe(char *pathToFifo, int times)
             }
             else
             {
-                printf("Read from fifo: size->%d\t%d\t%d\t%d\n", numBytes, odebranaPaczka->PID, odebranaPaczka->sigNum, odebranaPaczka->idTowaru);
+                //printf("Read from fifo: size->%d\t%d\t%d\t%d\n", numBytes, odebranaPaczka->PID, odebranaPaczka->sigNum, odebranaPaczka->idTowaru);
                 sv.sival_int = odebranaPaczka->idTowaru;
                 sigqueue(odebranaPaczka->PID, odebranaPaczka->sigNum, sv);
                 //kill(odebranaPaczka->PID, odebranaPaczka->sigNum);
